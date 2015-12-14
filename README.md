@@ -15,6 +15,7 @@ IvugeoCoin is a
  - 1 minute block targets
  - 1.6 coins per block
  - 60 million premine
+ - Burned 41 990 682 IEC ► https://bitcointalk.org/index.php?topic=1026371.msg13127285#msg13127285
  - 100 million total coins
  - Kimoto Gravity Wave
  - RPCport=10335
