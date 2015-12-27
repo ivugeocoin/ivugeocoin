@@ -200,6 +200,10 @@ unsigned int static KimotoGravityWell_V2(const CBlockIndex* pindexLast, const CB
         bnNew /= PastRateTargetSeconds;
     }
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
+
+    if (BlockLastSolved->nHeight >= 302191 && bnNew < bnProofOfWorkLimit) {
+      bnNew = bnProofOfWorkLimit;
+    }
    
     if(fDebug){
     /// debug print
