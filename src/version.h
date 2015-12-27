@@ -9,13 +9,13 @@
  * network protocol versioning
  */
 
-static const int PROTOCOL_VERSION = 70009;
+static const int PROTOCOL_VERSION = 70010;
 
 //! initial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 209;
 
 //! In this version, 'getheaders' was introduced.
-static const int GETHEADERS_VERSION = 70009;
+static const int GETHEADERS_VERSION = 70010;
 
 //! disconnect from peers older than this proto version
 static const int MIN_PEER_PROTO_VERSION = GETHEADERS_VERSION;
@@ -26,7 +26,7 @@ static const int CADDR_TIME_VERSION = 31402;
 
 //! only request blocks from nodes outside this range of versions
 static const int NOBLKS_VERSION_START = 1;
-static const int NOBLKS_VERSION_END = 70009;
+static const int NOBLKS_VERSION_END = 70010;
 
 //! BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
