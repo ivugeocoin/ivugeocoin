@@ -166,6 +166,7 @@ unsigned int static KimotoGravityWell_V2(const CBlockIndex* pindexLast, const CB
     double                                EventHorizonDeviationFast;
     double                                EventHorizonDeviationSlow;
 
+
     if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || (uint64_t)BlockLastSolved->nHeight < PastBlocksMin) { return bnProofOfWorkLimit.GetCompact(); }
 
     for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
@@ -201,10 +202,6 @@ unsigned int static KimotoGravityWell_V2(const CBlockIndex* pindexLast, const CB
     }
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
-    if (BlockLastSolved->nHeight >= 302191 && bnNew < bnProofOfWorkLimit) {
-      bnNew = bnProofOfWorkLimit;
-    }
-   
     if(fDebug){
     /// debug print
     LogPrintf("Difficulty Retarget - Kimoto Gravity Well V2\n");
@@ -212,6 +209,65 @@ unsigned int static KimotoGravityWell_V2(const CBlockIndex* pindexLast, const CB
     LogPrintf("Before: %08x  %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
     LogPrintf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
     }
+    return bnNew.GetCompact();
+}
+
+unsigned int static DarkGravityWave3(const CBlockIndex* pindexLast, const CBlockHeader *pblock) {
+    const CBlockIndex *BlockLastSolved = pindexLast;
+    const CBlockIndex *BlockReading = pindexLast;
+    const CBlockHeader *BlockCreating = pblock;
+    BlockCreating = BlockCreating;
+    int64_t nActualTimespan = 0;
+    int64_t LastBlockTime = 0;
+    int64_t PastBlocksMin = 24;
+    int64_t PastBlocksMax = 24;
+    int64_t CountBlocks = 0;
+    CBigNum PastDifficultyAverage;
+    CBigNum PastDifficultyAveragePrev;
+
+    for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
+        if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
+        CountBlocks++;
+
+        if(CountBlocks <= PastBlocksMin) {
+            if (CountBlocks == 1) { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
+            else { PastDifficultyAverage = ((PastDifficultyAveragePrev * CountBlocks)+(CBigNum().SetCompact(BlockReading->nBits))) / (CountBlocks+1); }
+            PastDifficultyAveragePrev = PastDifficultyAverage;
+        }
+
+        if(LastBlockTime > 0){
+            int64_t Diff = (LastBlockTime - BlockReading->GetBlockTime());
+            nActualTimespan += Diff;
+        }
+        LastBlockTime = BlockReading->GetBlockTime();
+
+        if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
+        BlockReading = BlockReading->pprev;
+    }
+
+    CBigNum bnNew(PastDifficultyAverage);
+
+    int64_t nTargetTimespan = CountBlocks*Params().TargetSpacing();
+
+    if (nActualTimespan < nTargetTimespan/3)
+        nActualTimespan = nTargetTimespan/3;
+    if (nActualTimespan > nTargetTimespan*3)
+        nActualTimespan = nTargetTimespan*3;
+
+    // Retarget
+    bnNew *= nActualTimespan;
+    bnNew /= nTargetTimespan;
+
+    if (bnNew > bnProofOfWorkLimit) {
+        bnNew = bnProofOfWorkLimit;
+    }
+
+    /// debug print
+    printf("GetNextWorkRequired RETARGET (DGW)\n");
+    printf("nTargetTimespan = %ld nActualTimespan = %ld\n", nTargetTimespan, nActualTimespan);
+    printf("Before: %08x  %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+
     return bnNew.GetCompact();
 }
 
@@ -247,29 +303,30 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         return GetNextWorkRequired_V1(pindexLast, pblock);
       } else if (nHeight >= nBlockChangeHeight && nHeight < KGW2_FORK) {
         return GetNextWorkRequired_V2(pindexLast, pblock);
-      } else if (nHeight >= KGW2_FORK) {
+      } else if (nHeight >= KGW2_FORK && nHeight <= 302191) {
         return GetNextWorkRequired_V3(pindexLast, pblock);
+      } else if (nHeight > 302191) {
+        return DarkGravityWave3(pindexLast,pblock);
       }
-        return GetNextWorkRequired_V3(pindexLast, pblock);
+
+        return DarkGravityWave3(pindexLast, pblock);
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
-    bool fNegative;
-    bool fOverflow;
-    uint256 bnTarget;
+    CBigNum bnTarget;
 
     if (Params().SkipProofOfWorkCheck())
        return true;
 
-    bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
+    bnTarget.SetCompact(nBits);
 
     // Check range
-    if (fNegative || bnTarget == 0 || fOverflow || bnTarget > Params().ProofOfWorkLimit())
+    if(bnTarget > bnProofOfWorkLimit)
         return error("CheckProofOfWork() : nBits below minimum work");
 
     // Check proof of work matches claimed amount
-    if (hash > bnTarget)
+    if (hash > bnTarget.getuint256())
         return error("CheckProofOfWork() : hash doesn't match nBits");
 
     return true;
