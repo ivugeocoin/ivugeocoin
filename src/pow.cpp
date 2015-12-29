@@ -263,10 +263,10 @@ unsigned int static DarkGravityWave3(const CBlockIndex* pindexLast, const CBlock
     }
 
     /// debug print
-    printf("GetNextWorkRequired RETARGET (DGW)\n");
-    printf("nTargetTimespan = %ld nActualTimespan = %ld\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    LogPrintf("GetNextWorkRequired RETARGET (DGW)\n");
+    LogPrintf("nTargetTimespan = %ld nActualTimespan = %ld\n", nTargetTimespan, nActualTimespan);
+    LogPrintf("Before: %08x  %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+    LogPrintf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
     return bnNew.GetCompact();
 }
